@@ -237,7 +237,7 @@
   overflow: hidden;
   background-color: #f7f0e3;
   background-position: center;
-  background-size: 100% 100%;
+  background-size: cover;
   background-repeat: no-repeat;
 }
 
@@ -255,9 +255,9 @@
 
 .game-hud {
   position: absolute;
-  top: 0.8%;
-  right: 1.2%;
-  left: 1.2%;
+  top: 4%;
+  right: 3.2%;
+  left: 3.2%;
   z-index: 8;
   display: flex;
   align-items: center;
@@ -269,7 +269,7 @@
   position: absolute;
   z-index: 9;
   max-width: var(--scene-72vw, 72vw);
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + 16px));
 }
 
 .game-title img {
@@ -317,7 +317,7 @@
   cursor: pointer;
   z-index: 10;
   filter: drop-shadow(0 5px 6px rgba(35, 18, 6, 0.34));
-  transform: translateY(-30px);
+  transform: translate(-12px, -48px);
   transition:
     transform 0.18s ease,
     filter 0.18s ease;
@@ -325,11 +325,11 @@
 
 .back-button:hover {
   filter: drop-shadow(0 9px 12px rgba(35, 18, 6, 0.4));
-  transform: translateY(-30px) scale(1.06);
+  transform: translate(-12px, -48px) scale(1.06);
 }
 
 .back-button:active {
-  transform: translateY(-30px) scale(1.01);
+  transform: translate(-12px, -48px) scale(1.01);
 }
 
 .back-button > img {
@@ -368,6 +368,7 @@
   display: flex;
   align-items: flex-start;
   color: #244d68;
+  transform: translateY(-8px);
 }
 
 .settings-button {
@@ -1043,7 +1044,7 @@
 
 .chest-grid {
   position: absolute;
-  bottom: 3%;
+  bottom: 7%;
   left: 50%;
   z-index: 2;
   pointer-events: none;
@@ -1055,7 +1056,8 @@
   grid-auto-rows: clamp(87px, var(--scene-8-1vw, 8.1vw), 130px);
   column-gap: clamp(18px, var(--scene-2-2vw, 2.2vw), 38px);
   row-gap: 0;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(0.92);
+  transform-origin: center bottom;
 }
 
 .chest-slot {
@@ -1311,15 +1313,15 @@
 
   .back-button {
     width: 74px;
-    transform: translateY(-20px);
+    transform: translate(-8px, -34px);
   }
 
   .back-button:hover {
-    transform: translateY(-20px) scale(1.04);
+    transform: translate(-8px, -34px) scale(1.04);
   }
 
   .back-button:active {
-    transform: translateY(-20px) scale(1.01);
+    transform: translate(-8px, -34px) scale(1.01);
   }
 
   .settings-button {

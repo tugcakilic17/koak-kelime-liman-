@@ -41,7 +41,9 @@ import chest5Open from '../assets/chests/chest5open.png'
 import chest6 from '../assets/chests/chest6.png'
 import chest6Open from '../assets/chests/chest6open.png'
 
-const isCollapsed = ref(false)
+// The scene was designed for the collapsed navigation width. Starting in that
+// state keeps the usable game viewport identical on every fresh browser.
+const isCollapsed = ref(true)
 const mascotShadowVisualOffsetY = 18
 const mascotVisualOffsetY = 22
 const starGroupVisualOffsetY = -1
@@ -59,7 +61,10 @@ const starPulseDurationMs = 620
 const finalStarBurstDurationMs = 760
 const finalStarPulseDelayMs = 520
 const finalStarPulseStepMs = 210
-const completionLayoutStorageKey = 'takim-macerasi-completion-layout-v6'
+// A new namespace prevents stale layout values from older builds from making
+// the same release look different in two browsers.
+const layoutStorageVersion = 'responsive-v1'
+const completionLayoutStorageKey = `takim-macerasi-completion-layout-${layoutStorageVersion}`
 const completionTitleText = completionCopy.title
 const completionBodyText = completionCopy.body
 const totalRounds = questions.length
@@ -277,16 +282,16 @@ type SeaLabelLayout = {
   y: number
 }
 
-const shadowStorageKey = 'takim-macerasi-shadow-layout-v5'
-const textAreaStorageKey = 'takim-macerasi-text-area-layout-v2'
-const textAreaVisualVersionKey = 'takim-macerasi-text-area-visual-version'
-const chestPositionStorageKey = 'takim-macerasi-chest-position-layout'
-const mascotStorageKey = 'takim-macerasi-mascot-layout-v3'
-const woodPanelStorageKey = 'takim-macerasi-wood-panel-layout'
-const gameTitleStorageKey = 'takim-macerasi-game-title-layout'
-const panelRopeStorageKey = 'takim-macerasi-panel-rope-layout-v2'
-const starGroupStorageKey = 'takim-macerasi-star-group-layout-v3'
-const seaLabelStorageKey = 'takim-macerasi-sea-label-layout-v2'
+const shadowStorageKey = `takim-macerasi-shadow-layout-${layoutStorageVersion}`
+const textAreaStorageKey = `takim-macerasi-text-area-layout-${layoutStorageVersion}`
+const textAreaVisualVersionKey = `takim-macerasi-text-area-visual-${layoutStorageVersion}`
+const chestPositionStorageKey = `takim-macerasi-chest-position-${layoutStorageVersion}`
+const mascotStorageKey = `takim-macerasi-mascot-layout-${layoutStorageVersion}`
+const woodPanelStorageKey = `takim-macerasi-wood-panel-${layoutStorageVersion}`
+const gameTitleStorageKey = `takim-macerasi-game-title-${layoutStorageVersion}`
+const panelRopeStorageKey = `takim-macerasi-panel-rope-${layoutStorageVersion}`
+const starGroupStorageKey = `takim-macerasi-star-group-${layoutStorageVersion}`
+const seaLabelStorageKey = `takim-macerasi-sea-label-${layoutStorageVersion}`
 
 function hasFiniteNumberFields<T extends object>(
   value: unknown,
@@ -344,6 +349,7 @@ const gameStageRef = ref<HTMLElement | null>(null)
 const mascotRef = ref<HTMLElement | null>(null)
 const mascotVisualRef = ref<HTMLElement | null>(null)
 const gameStageScale = ref(1)
+const gameStageWidth = ref(1438)
 
 type GameStageReference = {
   width: number
@@ -351,34 +357,15 @@ type GameStageReference = {
   viewportWidth: number
 }
 
-const gameStageReferenceStorageKey = 'takim-macerasi-game-stage-reference-v2'
 const defaultGameStageReference: GameStageReference = {
   width: 1438,
   height: 830,
   viewportWidth: 1528,
 }
 
-function loadGameStageReference(): GameStageReference | null {
-  const storedReference = readStoredJson(gameStageReferenceStorageKey)
-  if (!hasFiniteNumberFields<GameStageReference>(
-    storedReference,
-    ['width', 'height', 'viewportWidth'],
-  )) {
-    return { ...defaultGameStageReference }
-  }
-
-  if (
-    storedReference.width <= 0 ||
-    storedReference.height <= 0 ||
-    storedReference.viewportWidth <= 0
-  ) {
-    return { ...defaultGameStageReference }
-  }
-
-  return storedReference
-}
-
-const gameStageReference = ref<GameStageReference | null>(loadGameStageReference())
+// This must be a build-time constant. Persisting it in localStorage made each
+// computer use whichever viewport happened to be saved there previously.
+const gameStageReference: GameStageReference = { ...defaultGameStageReference }
 let contentResizeObserver: ResizeObserver | null = null
 
 function createSceneViewportStyles(viewportWidth: number) {
@@ -406,25 +393,16 @@ function createSceneViewportStyles(viewportWidth: number) {
 }
 
 const gameStageStyle = computed(() => {
-  const reference = gameStageReference.value
-
-  if (!reference) {
-    return {
-      width: `${100 / gameStageScale.value}%`,
-      height: `${100 / gameStageScale.value}%`,
-      backgroundImage: `url(${backgroundImage})`,
-      transform: `scale(${gameStageScale.value})`,
-    }
-  }
+  const reference = gameStageReference
 
   return {
-    width: `${reference.width}px`,
+    width: `${gameStageWidth.value}px`,
     height: `${reference.height}px`,
-    top: '50%',
+    top: '0',
     left: '50%',
-    backgroundImage: 'none',
-    transform: `translate(-50%, -50%) scale(${gameStageScale.value})`,
-    transformOrigin: 'center',
+    backgroundImage: `url(${backgroundImage})`,
+    transform: `translateX(-50%) scale(${gameStageScale.value})`,
+    transformOrigin: 'top center',
     ...createSceneViewportStyles(reference.viewportWidth),
   }
 })
@@ -507,31 +485,20 @@ function updateGameStageScale() {
   const content = contentRef.value
   if (!content) return
 
-  const reference = gameStageReference.value
-  if (reference) {
-    gameStageScale.value = Math.min(
-      content.clientWidth / reference.width,
-      content.clientHeight / reference.height,
-    )
+  const widthScale = content.clientWidth / gameStageReference.width
+  const heightScale = content.clientHeight / gameStageReference.height
+
+  if (content.clientWidth >= 900) {
+    // Preserve the full vertical composition and let percentage-based
+    // positions adapt horizontally. This prevents both top gaps and vertical
+    // cropping in short/wide browser windows.
+    gameStageScale.value = heightScale
+    gameStageWidth.value = content.clientWidth / heightScale
     return
   }
 
-  const collapsedSidebarWidth = window.innerWidth <= 600 ? 78 : 90
-  const designWidth = Math.max(1, window.innerWidth - collapsedSidebarWidth)
-  gameStageScale.value = Math.min(1, content.clientWidth / designWidth)
-}
-
-function lockGameStageReference() {
-  const stage = gameStageRef.value
-  if (!stage || gameStageReference.value) return
-
-  const reference = {
-    width: stage.clientWidth,
-    height: stage.clientHeight,
-    viewportWidth: window.innerWidth,
-  }
-  gameStageReference.value = reference
-  writeStoredJson(gameStageReferenceStorageKey, reference)
+  gameStageScale.value = Math.min(widthScale, heightScale)
+  gameStageWidth.value = gameStageReference.width
 }
 
 function loadShadows(): ShadowItem[] {
@@ -669,6 +636,19 @@ function loadPanelRopeLayouts(): PanelRopeLayout[] {
 }
 
 const panelRopeLayouts = ref<PanelRopeLayout[]>(loadPanelRopeLayouts())
+const panelRopeInset = 60
+
+function getPanelRopeLeft(rope: PanelRopeLayout, index: number) {
+  if (index === 0) {
+    return `calc(${woodPanelLayout.value.x}% - ${woodPanelLayout.value.width / 2 - panelRopeInset}px)`
+  }
+
+  if (index === 1) {
+    return `calc(${woodPanelLayout.value.x}% + ${woodPanelLayout.value.width / 2 - panelRopeInset}px)`
+  }
+
+  return `${rope.x}%`
+}
 
 function loadSeaLabelLayout(): SeaLabelLayout {
   return loadNumericLayout(seaLabelStorageKey, { x: 0, y: 0 }, ['x', 'y'])
@@ -1072,8 +1052,6 @@ onMounted(async () => {
   initializeSounds()
   updateGameStageScale()
   await nextTick()
-  lockGameStageReference()
-  await nextTick()
   updateGameStageScale()
 
   contentResizeObserver = new ResizeObserver(updateGameStageScale)
@@ -1326,11 +1304,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div
-        v-for="rope in panelRopeLayouts"
+        v-for="(rope, ropeIndex) in panelRopeLayouts"
         :key="rope.id"
         class="panel-rope"
         :style="{
-          left: `${rope.x}%`,
+          left: getPanelRopeLeft(rope, ropeIndex),
           top: `${rope.y}%`,
           width: `${rope.height * 0.3}px`,
           height: `${rope.height}px`,
