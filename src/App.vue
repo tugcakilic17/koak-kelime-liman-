@@ -45,7 +45,7 @@ import chest6Open from '../assets/chests/chest6open.png'
 // The scene was designed for the collapsed navigation width. Starting in that
 // state keeps the usable game viewport identical on every fresh browser.
 const isCollapsed = ref(true)
-const { isMobilePortrait, enableLandscape } = useLandscapeOrientation()
+useLandscapeOrientation()
 const mascotShadowVisualOffsetY = 18
 const mascotVisualOffsetY = 22
 const starGroupVisualOffsetY = -1
@@ -400,11 +400,11 @@ const gameStageStyle = computed(() => {
   return {
     width: `${gameStageWidth.value}px`,
     height: `${reference.height}px`,
-    top: '0',
+    top: '50%',
     left: '50%',
     backgroundImage: `url(${backgroundImage})`,
-    transform: `translateX(-50%) scale(${gameStageScale.value})`,
-    transformOrigin: 'top center',
+    transform: `translate(-50%, -50%) scale(${gameStageScale.value})`,
+    transformOrigin: 'center',
     ...createSceneViewportStyles(reference.viewportWidth),
   }
 })
@@ -491,9 +491,6 @@ function updateGameStageScale() {
   const heightScale = content.clientHeight / gameStageReference.height
 
   if (content.clientWidth >= 900) {
-    // Preserve the full vertical composition and let percentage-based
-    // positions adapt horizontally. This prevents both top gaps and vertical
-    // cropping in short/wide browser windows.
     gameStageScale.value = heightScale
     gameStageWidth.value = content.clientWidth / heightScale
     return
@@ -1096,24 +1093,6 @@ onBeforeUnmount(() => {
     :class="{ 'is-collapsed': isCollapsed }"
     @click.capture="handleInterfaceClick"
   >
-    <div
-      v-if="isMobilePortrait"
-      class="orientation-guard"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="orientation-title"
-    >
-      <div class="orientation-card">
-        <div class="rotate-phone" aria-hidden="true">
-          <span class="rotate-phone-screen"></span>
-        </div>
-        <h1 id="orientation-title">Telefonu yatay çevir</h1>
-        <p>Kelime Limanı yatay ekranda oynanır.</p>
-        <button type="button" @click="enableLandscape">Yatay moda geç</button>
-        <small>Ekran dönmezse telefonunu yan çevir.</small>
-      </div>
-    </div>
-
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">⚡</span>
@@ -1163,11 +1142,7 @@ onBeforeUnmount(() => {
       </button>
     </aside>
 
-    <main
-      ref="contentRef"
-      class="content"
-      :style="{ backgroundImage: `url(${backgroundImage})` }"
-    >
+    <main ref="contentRef" class="content">
       <div ref="gameStageRef" class="game-stage" :style="gameStageStyle">
       <header class="game-hud">
         <button class="back-button" type="button">

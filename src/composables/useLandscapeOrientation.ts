@@ -1,19 +1,12 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 type LockableScreenOrientation = ScreenOrientation & {
   lock?: (orientation: 'landscape') => Promise<void>
 }
 
 export function useLandscapeOrientation() {
-  const isMobilePortrait = ref(false)
-  let portraitQuery: MediaQueryList | null = null
-
-  function updateOrientationState() {
-    isMobilePortrait.value = portraitQuery?.matches ?? false
-  }
-
   async function lockLandscape(enterFullscreen = false) {
-    if (!isMobilePortrait.value) return
+    if (!window.matchMedia('(orientation: portrait) and (pointer: coarse)').matches) return
 
     if (enterFullscreen && !document.fullscreenElement && document.documentElement.requestFullscreen) {
       try {
@@ -34,18 +27,15 @@ export function useLandscapeOrientation() {
   }
 
   onMounted(() => {
-    portraitQuery = window.matchMedia('(orientation: portrait) and (pointer: coarse)')
-    updateOrientationState()
-    portraitQuery.addEventListener('change', updateOrientationState)
     void lockLandscape()
+    window.addEventListener('pointerdown', handleFirstInteraction, { once: true })
   })
 
   onBeforeUnmount(() => {
-    portraitQuery?.removeEventListener('change', updateOrientationState)
+    window.removeEventListener('pointerdown', handleFirstInteraction)
   })
 
-  return {
-    isMobilePortrait,
-    enableLandscape: () => lockLandscape(true),
+  function handleFirstInteraction() {
+    void lockLandscape(true)
   }
 }
