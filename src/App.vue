@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useGameSounds } from './composables/useGameSounds'
+import { useLandscapeOrientation } from './composables/useLandscapeOrientation'
 import {
   CHEST_COUNT,
   completionCopy,
@@ -44,6 +45,7 @@ import chest6Open from '../assets/chests/chest6open.png'
 // The scene was designed for the collapsed navigation width. Starting in that
 // state keeps the usable game viewport identical on every fresh browser.
 const isCollapsed = ref(true)
+const { isMobilePortrait, enableLandscape } = useLandscapeOrientation()
 const mascotShadowVisualOffsetY = 18
 const mascotVisualOffsetY = 22
 const starGroupVisualOffsetY = -1
@@ -1094,6 +1096,24 @@ onBeforeUnmount(() => {
     :class="{ 'is-collapsed': isCollapsed }"
     @click.capture="handleInterfaceClick"
   >
+    <div
+      v-if="isMobilePortrait"
+      class="orientation-guard"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="orientation-title"
+    >
+      <div class="orientation-card">
+        <div class="rotate-phone" aria-hidden="true">
+          <span class="rotate-phone-screen"></span>
+        </div>
+        <h1 id="orientation-title">Telefonu yatay çevir</h1>
+        <p>Kelime Limanı yatay ekranda oynanır.</p>
+        <button type="button" @click="enableLandscape">Yatay moda geç</button>
+        <small>Ekran dönmezse telefonunu yan çevir.</small>
+      </div>
+    </div>
+
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">⚡</span>
