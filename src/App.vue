@@ -43,6 +43,7 @@ import chest6Open from '../assets/chests/chest6open.png'
 
 const isCollapsed = ref(false)
 const mascotShadowVisualOffsetY = 18
+const mascotVisualOffsetY = 22
 const starGroupVisualOffsetY = -1
 const woodPanelHeightAdjustment = 28
 const chestOpenStates = ref(Array.from({ length: CHEST_COUNT }, () => false))
@@ -150,11 +151,11 @@ function mergeLayoutItem<T extends CompletionLayoutItem>(
 
 function loadCompletionLayout(): CompletionLayout {
   const defaultLayout: CompletionLayout = {
-    stars: { x: 64, y: 138 },
-    title: { x: 102, y: 224 },
-    body: { x: 57, y: 306 },
-    playAgain: { x: 95, y: 500, width: 86 },
-    home: { x: 224, y: 500, width: 86 },
+    stars: { x: 93.03214896891019, y: 162.49592327996385 },
+    title: { x: 137.3830483614082, y: 205.85488958990535 },
+    body: { x: 57.90724167688412, y: 280.59681773862627 },
+    playAgain: { x: 103.1653135281632, y: 383.75043174671447, width: 82 },
+    home: { x: 222.18551664623175, y: 387.53869330469365, width: 82 },
   }
 
   const storedLayout = readStoredJson(completionLayoutStorageKey)
@@ -351,6 +352,11 @@ type GameStageReference = {
 }
 
 const gameStageReferenceStorageKey = 'takim-macerasi-game-stage-reference-v2'
+const defaultGameStageReference: GameStageReference = {
+  width: 1438,
+  height: 830,
+  viewportWidth: 1528,
+}
 
 function loadGameStageReference(): GameStageReference | null {
   const storedReference = readStoredJson(gameStageReferenceStorageKey)
@@ -358,7 +364,7 @@ function loadGameStageReference(): GameStageReference | null {
     storedReference,
     ['width', 'height', 'viewportWidth'],
   )) {
-    return null
+    return { ...defaultGameStageReference }
   }
 
   if (
@@ -366,7 +372,7 @@ function loadGameStageReference(): GameStageReference | null {
     storedReference.height <= 0 ||
     storedReference.viewportWidth <= 0
   ) {
-    return null
+    return { ...defaultGameStageReference }
   }
 
   return storedReference
@@ -424,16 +430,77 @@ const gameStageStyle = computed(() => {
 })
 
 function createDefaultChestShadows(startId = 1): ShadowItem[] {
-  return chestImages.map((_, index) => ({
+  const layouts = [
+    {
+      chestId: 1,
+      x: -32.19753171517647,
+      y: 92.04040623613713,
+      width: 245.59991455078125,
+      height: 64.00006103515625,
+      opacity: 0.85,
+    },
+    {
+      chestId: 2,
+      x: -31,
+      y: 97.60003662109375,
+      width: 238.39996337890625,
+      height: 59.20001220703125,
+      opacity: 0.85,
+    },
+    {
+      chestId: 3,
+      x: -52.5999755859375,
+      y: 110.4000244140625,
+      width: 261.60009765625,
+      height: 43.20001220703125,
+      opacity: 0.85,
+    },
+    {
+      chestId: 4,
+      x: -21.4000244140625,
+      y: 100.79998779296875,
+      width: 212,
+      height: 46.39996337890625,
+      opacity: 0.85,
+    },
+    {
+      chestId: 5,
+      x: -19,
+      y: 109.5999755859375,
+      width: 210.4000244140625,
+      height: 40,
+      opacity: 0.85,
+    },
+    {
+      chestId: 6,
+      x: -15.00006103515625,
+      y: 100,
+      width: 224.7999267578125,
+      height: 52,
+      opacity: 0.8,
+    },
+  ]
+
+  return layouts.map((layout, index) => ({
     id: startId + index,
-    chestId: index + 1,
     anchor: 'chest' as const,
-    x: 5,
-    y: 112,
-    width: 140,
-    height: 28,
-    opacity: 0.72,
+    ...layout,
   }))
+}
+
+function createDefaultShadows(): ShadowItem[] {
+  return [
+    ...createDefaultChestShadows(),
+    {
+      id: 10,
+      x: -26.560041367202835,
+      y: 226.72613732978036,
+      width: 346.8000183105469,
+      height: 128.39999389648438,
+      opacity: 0.85,
+      anchor: 'mascot',
+    },
+  ]
 }
 
 function updateGameStageScale() {
@@ -485,7 +552,7 @@ function loadShadows(): ShadowItem[] {
     return [...validShadows, ...missingChestShadows]
   }
 
-  return createDefaultChestShadows()
+  return createDefaultShadows()
 }
 
 const shadows = ref<ShadowItem[]>(loadShadows())
@@ -497,7 +564,7 @@ const mascotShadows = computed(() =>
 )
 
 if (shadows.value.length === 0) {
-  shadows.value = createDefaultChestShadows()
+  shadows.value = createDefaultShadows()
 }
 
 function loadTextAreas(): TextAreaItem[] {
@@ -508,16 +575,21 @@ function loadTextAreas(): TextAreaItem[] {
   }
 
   return [
-    ...Array.from({ length: CHEST_COUNT }, (_, index): TextAreaItem => ({
-      id: index + 1,
-      chestId: index + 1,
-      x: 25,
+    {
+      id: 1,
+      chestId: 1,
+      x: 41.59991455078125,
       y: 60,
-      width: 100,
-      height: 42,
-      rotation: 0,
+      width: 75.199951171875,
+      height: 57.20001220703125,
+      rotation: 4,
       anchor: 'chest',
-    })),
+    },
+    { id: 2, chestId: 2, x: 28.79998779296875, y: 68.800048828125, width: 100, height: 42, rotation: 4, anchor: 'chest' },
+    { id: 3, chestId: 3, x: 26.39990234375, y: 68.79998779296875, width: 100, height: 42, rotation: 4, anchor: 'chest' },
+    { id: 4, chestId: 4, x: 31.20001220703125, y: 68.79998779296875, width: 100, height: 42, rotation: 4, anchor: 'chest' },
+    { id: 5, chestId: 5, x: 25.5999755859375, y: 69.60003662109375, width: 100, height: 42, rotation: 4, anchor: 'chest' },
+    { id: 6, chestId: 6, x: 28, y: 67.20001220703125, width: 100, height: 42, rotation: 4, anchor: 'chest' },
   ]
 }
 
@@ -545,7 +617,7 @@ function returnToStart() {
 function loadMascotLayout(): MascotLayout {
   return loadNumericLayout(
     mascotStorageKey,
-    { x: 3, y: 61, width: 180 },
+    { x: 3.8832769062992907, y: 49.85242894438205, width: 296.8000183105469 },
     ['x', 'y', 'width'],
   )
 }
@@ -770,6 +842,12 @@ function migrateLegacyTextAreas() {
 
 function improveTextAreaPresentation() {
   if (readStoredText(textAreaVisualVersionKey) === '1') return
+
+  // Fresh installations already use the finalized positions baked into the code.
+  if (!Array.isArray(readStoredJson(textAreaStorageKey))) {
+    writeStoredText(textAreaVisualVersionKey, '1')
+    return
+  }
 
   textAreas.value.forEach((area) => {
     const chestElement = chestElements[area.chestId - 1]
@@ -1340,6 +1418,24 @@ onBeforeUnmount(() => {
       />
 
       <div
+        v-for="shadow in mascotShadows"
+        :key="shadow.id"
+        class="editable-shadow mascot-shadow"
+        :style="{
+          left: `calc(${mascotLayout.x}% + ${shadow.x}px)`,
+          top: `calc(${mascotLayout.y}% + ${mascotVisualOffsetY + shadow.y - mascotShadowVisualOffsetY}px)`,
+          width: `${shadow.width}px`,
+          height: `${shadow.height}px`,
+        }"
+      >
+        <span
+          class="shadow-visual"
+          :style="{ opacity: shadow.opacity }"
+          aria-hidden="true"
+        ></span>
+      </div>
+
+      <div
         ref="mascotRef"
         class="mascot"
         :style="{
@@ -1348,24 +1444,11 @@ onBeforeUnmount(() => {
           width: `${mascotLayout.width}px`,
         }"
       >
-        <div ref="mascotVisualRef" class="mascot-visual">
-          <div
-            v-for="shadow in mascotShadows"
-            :key="shadow.id"
-            class="editable-shadow mascot-shadow"
-            :style="{
-              left: `${shadow.x}px`,
-              top: `${shadow.y - mascotShadowVisualOffsetY}px`,
-              width: `${shadow.width}px`,
-              height: `${shadow.height}px`,
-            }"
-          >
-            <span
-              class="shadow-visual"
-              :style="{ opacity: shadow.opacity }"
-              aria-hidden="true"
-            ></span>
-          </div>
+        <div
+          ref="mascotVisualRef"
+          class="mascot-visual"
+          :style="{ transform: `translateY(${mascotVisualOffsetY}px)` }"
+        >
           <img :src="mascotImage" alt="Maskot" draggable="false" />
         </div>
       </div>

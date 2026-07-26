@@ -974,7 +974,6 @@
 .mascot-visual {
   position: relative;
   width: 100%;
-  transform: translateY(22px);
   transform-origin: center bottom;
 }
 
