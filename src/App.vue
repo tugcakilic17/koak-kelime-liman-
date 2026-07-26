@@ -8,14 +8,6 @@ import {
   journeyItems,
   questions,
 } from './game/gameConfig'
-import {
-  isFiniteNumber,
-  isRecord,
-  readStoredJson,
-  readStoredText,
-  writeStoredJson,
-  writeStoredText,
-} from './utils/storage'
 import backgroundImage from '../assets/background.png'
 import anchorImage from '../assets/ui/anchor.png'
 import congratsImage from '../assets/ui/congrats.png'
@@ -63,10 +55,6 @@ const starPulseDurationMs = 620
 const finalStarBurstDurationMs = 760
 const finalStarPulseDelayMs = 520
 const finalStarPulseStepMs = 210
-// A new namespace prevents stale layout values from older builds from making
-// the same release look different in two browsers.
-const layoutStorageVersion = 'responsive-v1'
-const completionLayoutStorageKey = `takim-macerasi-completion-layout-${layoutStorageVersion}`
 const completionTitleText = completionCopy.title
 const completionBodyText = completionCopy.body
 const totalRounds = questions.length
@@ -138,65 +126,13 @@ function handleInterfaceClick(event: MouseEvent) {
   playSound('buttonClick')
 }
 
-function normalizeCompletionActionWidth(width: number | undefined, fallback: number) {
-  if (!Number.isFinite(width)) return fallback
-  return Math.max(72, Math.min(width ?? fallback, 92))
+const completionLayout: CompletionLayout = {
+  stars: { x: 93.03214896891019, y: 162.49592327996385 },
+  title: { x: 137.3830483614082, y: 205.85488958990535 },
+  body: { x: 57.90724167688412, y: 280.59681773862627 },
+  playAgain: { x: 103.1653135281632, y: 383.75043174671447, width: 82 },
+  home: { x: 222.18551664623175, y: 387.53869330469365, width: 82 },
 }
-
-function mergeLayoutItem<T extends CompletionLayoutItem>(
-  fallback: T,
-  storedValue: unknown,
-): T {
-  if (!isRecord(storedValue)) return { ...fallback }
-
-  return {
-    ...fallback,
-    x: isFiniteNumber(storedValue.x) ? storedValue.x : fallback.x,
-    y: isFiniteNumber(storedValue.y) ? storedValue.y : fallback.y,
-  }
-}
-
-function loadCompletionLayout(): CompletionLayout {
-  const defaultLayout: CompletionLayout = {
-    stars: { x: 93.03214896891019, y: 162.49592327996385 },
-    title: { x: 137.3830483614082, y: 205.85488958990535 },
-    body: { x: 57.90724167688412, y: 280.59681773862627 },
-    playAgain: { x: 103.1653135281632, y: 383.75043174671447, width: 82 },
-    home: { x: 222.18551664623175, y: 387.53869330469365, width: 82 },
-  }
-
-  const storedLayout = readStoredJson(completionLayoutStorageKey)
-  if (!isRecord(storedLayout)) return defaultLayout
-
-  const playAgain = mergeLayoutItem(defaultLayout.playAgain, storedLayout.playAgain)
-  const home = mergeLayoutItem(defaultLayout.home, storedLayout.home)
-
-  return {
-    stars: mergeLayoutItem(defaultLayout.stars, storedLayout.stars),
-    title: mergeLayoutItem(defaultLayout.title, storedLayout.title),
-    body: mergeLayoutItem(defaultLayout.body, storedLayout.body),
-    playAgain: {
-      ...playAgain,
-      width: normalizeCompletionActionWidth(
-        isRecord(storedLayout.playAgain) && isFiniteNumber(storedLayout.playAgain.width)
-          ? storedLayout.playAgain.width
-          : undefined,
-        defaultLayout.playAgain.width,
-      ),
-    },
-    home: {
-      ...home,
-      width: normalizeCompletionActionWidth(
-        isRecord(storedLayout.home) && isFiniteNumber(storedLayout.home.width)
-          ? storedLayout.home.width
-          : undefined,
-        defaultLayout.home.width,
-      ),
-    },
-  }
-}
-
-const completionLayout: CompletionLayout = loadCompletionLayout()
 
 function resetGameProgress() {
   stopSound('starAppear')
@@ -284,72 +220,9 @@ type SeaLabelLayout = {
   y: number
 }
 
-const shadowStorageKey = `takim-macerasi-shadow-layout-${layoutStorageVersion}`
-const textAreaStorageKey = `takim-macerasi-text-area-layout-${layoutStorageVersion}`
-const textAreaVisualVersionKey = `takim-macerasi-text-area-visual-${layoutStorageVersion}`
-const chestPositionStorageKey = `takim-macerasi-chest-position-${layoutStorageVersion}`
-const mascotStorageKey = `takim-macerasi-mascot-layout-${layoutStorageVersion}`
-const woodPanelStorageKey = `takim-macerasi-wood-panel-${layoutStorageVersion}`
-const gameTitleStorageKey = `takim-macerasi-game-title-${layoutStorageVersion}`
-const panelRopeStorageKey = `takim-macerasi-panel-rope-${layoutStorageVersion}`
-const starGroupStorageKey = `takim-macerasi-star-group-${layoutStorageVersion}`
-const seaLabelStorageKey = `takim-macerasi-sea-label-${layoutStorageVersion}`
-
-function hasFiniteNumberFields<T extends object>(
-  value: unknown,
-  fields: readonly (keyof T)[],
-): value is T {
-  return (
-    isRecord(value) &&
-    fields.every((field) => isFiniteNumber(value[String(field)]))
-  )
-}
-
-function loadNumericLayout<T extends object>(
-  storageKey: string,
-  fallback: T,
-  fields: readonly (keyof T)[],
-): T {
-  const storedLayout = readStoredJson(storageKey)
-  return hasFiniteNumberFields<T>(storedLayout, fields)
-    ? storedLayout
-    : { ...fallback }
-}
-
-type StoredShadowItem = Omit<ShadowItem, 'opacity'> & { opacity?: number }
-
-function isStoredShadowItem(value: unknown): value is StoredShadowItem {
-  if (!hasFiniteNumberFields<StoredShadowItem>(
-    value,
-    ['id', 'x', 'y', 'width', 'height'],
-  )) {
-    return false
-  }
-
-  if (value.opacity !== undefined && !isFiniteNumber(value.opacity)) return false
-  if (value.chestId !== undefined && !isFiniteNumber(value.chestId)) return false
-  return value.anchor === undefined || ['content', 'chest', 'mascot'].includes(value.anchor)
-}
-
-function isTextAreaItem(value: unknown): value is TextAreaItem {
-  if (!hasFiniteNumberFields<TextAreaItem>(
-    value,
-    ['id', 'chestId', 'x', 'y', 'width', 'height', 'rotation'],
-  )) {
-    return false
-  }
-
-  return value.anchor === undefined || value.anchor === 'content' || value.anchor === 'chest'
-}
-
-function isPanelRopeLayout(value: unknown): value is PanelRopeLayout {
-  return hasFiniteNumberFields<PanelRopeLayout>(value, ['id', 'x', 'y', 'height'])
-}
-
 const contentRef = ref<HTMLElement | null>(null)
 const gameStageRef = ref<HTMLElement | null>(null)
 const mascotRef = ref<HTMLElement | null>(null)
-const mascotVisualRef = ref<HTMLElement | null>(null)
 const gameStageScale = ref(1)
 const gameStageWidth = ref(1438)
 
@@ -365,8 +238,6 @@ const defaultGameStageReference: GameStageReference = {
   viewportWidth: 1528,
 }
 
-// This must be a build-time constant. Persisting it in localStorage made each
-// computer use whichever viewport happened to be saved there previously.
 const gameStageReference: GameStageReference = { ...defaultGameStageReference }
 let contentResizeObserver: ResizeObserver | null = null
 
@@ -500,47 +371,12 @@ function updateGameStageScale() {
   gameStageWidth.value = gameStageReference.width
 }
 
-function loadShadows(): ShadowItem[] {
-  const storedShadows = readStoredJson(shadowStorageKey)
-  if (Array.isArray(storedShadows)) {
-    const validShadows = storedShadows.filter(isStoredShadowItem).map((shadow) => ({
-      ...shadow,
-      opacity: shadow.opacity ?? 0.55,
-    }))
-    const maxShadowId = Math.max(0, ...validShadows.map((shadow) => shadow.id))
-    const missingChestShadows = createDefaultChestShadows(maxShadowId + 1).filter(
-      (defaultShadow) =>
-        !validShadows.some(
-          (shadow) =>
-            shadow.anchor === 'chest' && shadow.chestId === defaultShadow.chestId,
-        ),
-    )
-    return [...validShadows, ...missingChestShadows]
-  }
-
-  return createDefaultShadows()
-}
-
-const shadows = ref<ShadowItem[]>(loadShadows())
-const contentShadows = computed(() =>
-  shadows.value.filter((shadow) => shadow.anchor === 'content'),
-)
+const shadows = ref<ShadowItem[]>(createDefaultShadows())
 const mascotShadows = computed(() =>
   shadows.value.filter((shadow) => shadow.anchor === 'mascot'),
 )
 
-if (shadows.value.length === 0) {
-  shadows.value = createDefaultShadows()
-}
-
-function loadTextAreas(): TextAreaItem[] {
-  const storedTextAreas = readStoredJson(textAreaStorageKey)
-  if (Array.isArray(storedTextAreas)) {
-    const validTextAreas = storedTextAreas.filter(isTextAreaItem)
-    if (validTextAreas.length > 0) return validTextAreas
-  }
-
-  return [
+const textAreas = ref<TextAreaItem[]>([
     {
       id: 1,
       chestId: 1,
@@ -556,10 +392,7 @@ function loadTextAreas(): TextAreaItem[] {
     { id: 4, chestId: 4, x: 31.20001220703125, y: 68.79998779296875, width: 100, height: 42, rotation: 4, anchor: 'chest' },
     { id: 5, chestId: 5, x: 25.5999755859375, y: 69.60003662109375, width: 100, height: 42, rotation: 4, anchor: 'chest' },
     { id: 6, chestId: 6, x: 28, y: 67.20001220703125, width: 100, height: 42, rotation: 4, anchor: 'chest' },
-  ]
-}
-
-const textAreas = ref<TextAreaItem[]>(loadTextAreas())
+])
 const textAreaByChestId = computed(() =>
   new Map(textAreas.value.map((area) => [area.chestId, area])),
 )
@@ -580,61 +413,24 @@ function returnToStart() {
   resetGameProgress()
 }
 
-function loadMascotLayout(): MascotLayout {
-  return loadNumericLayout(
-    mascotStorageKey,
-    { x: 3.8832769062992907, y: 49.85242894438205, width: 296.8000183105469 },
-    ['x', 'y', 'width'],
-  )
-}
-
-const mascotLayout = ref<MascotLayout>(loadMascotLayout())
-
-function loadWoodPanelLayout(): WoodPanelLayout {
-  const storedLayout = readStoredJson(woodPanelStorageKey)
-  const width = isRecord(storedLayout) && isFiniteNumber(storedLayout.width)
-    ? storedLayout.width
-    : 640
-
-  return {
-    x: isRecord(storedLayout) && isFiniteNumber(storedLayout.x) ? storedLayout.x : 50,
-    y: isRecord(storedLayout) && isFiniteNumber(storedLayout.y) ? storedLayout.y : 15,
-    width,
-    height:
-      isRecord(storedLayout) && isFiniteNumber(storedLayout.height)
-        ? storedLayout.height
-        : width * (311 / 805),
-  }
-}
-
-const woodPanelLayout = ref<WoodPanelLayout>(loadWoodPanelLayout())
-
-function loadGameTitleLayout(): GameTitleLayout {
-  return loadNumericLayout(
-    gameTitleStorageKey,
-    { x: 50, y: 8, width: 500 },
-    ['x', 'y', 'width'],
-  )
-}
-
-const gameTitleLayout = ref<GameTitleLayout>(loadGameTitleLayout())
-
-function loadPanelRopeLayouts(): PanelRopeLayout[] {
-  const storedLayouts = readStoredJson(panelRopeStorageKey)
-  if (Array.isArray(storedLayouts)) {
-    const validLayouts = storedLayouts.filter(isPanelRopeLayout)
-    if (validLayouts.length > 0) return validLayouts
-  }
-
-  return [
-    { id: 1, x: 32, y: 0, height: 185 },
-    { id: 2, x: 68, y: 0, height: 185 },
-    { id: 3, x: 86.5, y: 9.5, height: 55 },
-    { id: 4, x: 93, y: 9.5, height: 55 },
-  ]
-}
-
-const panelRopeLayouts = ref<PanelRopeLayout[]>(loadPanelRopeLayouts())
+const mascotLayout = ref<MascotLayout>({
+  x: 3.8832769062992907,
+  y: 49.85242894438205,
+  width: 296.8000183105469,
+})
+const woodPanelLayout = ref<WoodPanelLayout>({
+  x: 50,
+  y: 15,
+  width: 640,
+  height: 640 * (311 / 805),
+})
+const gameTitleLayout = ref<GameTitleLayout>({ x: 50, y: 8, width: 500 })
+const panelRopeLayouts = ref<PanelRopeLayout[]>([
+  { id: 1, x: 32, y: 0, height: 185 },
+  { id: 2, x: 68, y: 0, height: 185 },
+  { id: 3, x: 86.5, y: 9.5, height: 55 },
+  { id: 4, x: 93, y: 9.5, height: 55 },
+])
 const panelRopeInset = 60
 
 function getPanelRopeLeft(rope: PanelRopeLayout, index: number) {
@@ -649,41 +445,11 @@ function getPanelRopeLeft(rope: PanelRopeLayout, index: number) {
   return `${rope.x}%`
 }
 
-function loadSeaLabelLayout(): SeaLabelLayout {
-  return loadNumericLayout(seaLabelStorageKey, { x: 0, y: 0 }, ['x', 'y'])
-}
-
-const seaLabelLayout = ref<SeaLabelLayout>(loadSeaLabelLayout())
-
-function loadStarGroupLayout(): StarGroupLayout {
-  return loadNumericLayout(starGroupStorageKey, { x: 50, y: 40.5 }, ['x', 'y'])
-}
-
-const starGroupLayout = ref<StarGroupLayout>(loadStarGroupLayout())
-
-function loadChestPositions(): Record<number, ChestPosition> {
-  const defaultPositions = Object.fromEntries(
-    chestImages.map((_, index) => [index + 1, { x: 0, y: 0 }]),
-  )
-
-  const storedPositions = readStoredJson(chestPositionStorageKey)
-  if (!isRecord(storedPositions)) return defaultPositions
-
-  return Object.fromEntries(
-    chestImages.map((_, index) => {
-      const chestId = index + 1
-      const storedPosition = storedPositions[chestId]
-      return [
-        chestId,
-        hasFiniteNumberFields<ChestPosition>(storedPosition, ['x', 'y'])
-          ? storedPosition
-          : { x: 0, y: 0 },
-      ]
-    }),
-  )
-}
-
-const chestPositions = ref<Record<number, ChestPosition>>(loadChestPositions())
+const seaLabelLayout = ref<SeaLabelLayout>({ x: 0, y: 0 })
+const starGroupLayout = ref<StarGroupLayout>({ x: 50, y: 40.5 })
+const chestPositions = ref<Record<number, ChestPosition>>(
+  Object.fromEntries(chestImages.map((_, index) => [index + 1, { x: 0, y: 0 }])),
+)
 
 function getChestPosition(chestId: number) {
   return chestPositions.value[chestId] ?? { x: 0, y: 0 }
@@ -702,142 +468,6 @@ function getChestShadowEntries(chestId: number) {
   return shadows.value.filter(
     (shadow) => shadow.anchor === 'chest' && shadow.chestId === chestId,
   )
-}
-
-function migrateChestShadows() {
-  const content = gameStageRef.value
-  if (!content) return
-
-  const contentRect = content.getBoundingClientRect()
-  const previousShadows = shadows.value
-
-  const migratedShadows = previousShadows.map((shadow): ShadowItem => {
-    if (shadow.anchor === 'chest') return shadow
-
-    const chestId = shadow.id >= 4 && shadow.id <= 9 ? shadow.id - 3 : undefined
-    if (!chestId) return shadow
-
-    const chestElement = chestElements[chestId - 1]
-    if (!chestElement) return shadow
-
-    const chestRect = chestElement.getBoundingClientRect()
-
-    return {
-      ...shadow,
-      chestId,
-      anchor: 'chest',
-      x: (shadow.x / 100) * contentRect.width - (chestRect.left - contentRect.left),
-      y: (shadow.y / 100) * contentRect.height - (chestRect.top - contentRect.top),
-    }
-  })
-
-  if (migratedShadows.some((shadow, index) => shadow !== previousShadows[index])) {
-    shadows.value = migratedShadows
-    writeStoredJson(shadowStorageKey, migratedShadows)
-  }
-}
-
-function migrateMascotShadows() {
-  const content = gameStageRef.value
-  const mascot = mascotVisualRef.value ?? mascotRef.value
-  if (!content || !mascot) return
-
-  const contentRect = content.getBoundingClientRect()
-  const mascotRect = mascot.getBoundingClientRect()
-  const scale = gameStageScale.value
-  const previousShadows = shadows.value
-
-  const migratedShadows = previousShadows.flatMap<ShadowItem>((shadow) => {
-    if (shadow.anchor === 'chest' || shadow.anchor === 'mascot') return [shadow]
-
-    const shadowCenterX =
-      contentRect.left + (shadow.x / 100) * contentRect.width +
-      (shadow.width * scale) / 2
-    const shadowCenterY =
-      contentRect.top + (shadow.y / 100) * contentRect.height +
-      (shadow.height * scale) / 2
-    const isNearMascot =
-      shadowCenterX >= mascotRect.left - 80 &&
-      shadowCenterX <= mascotRect.right + 80 &&
-      shadowCenterY >= mascotRect.top - 60 &&
-      shadowCenterY <= mascotRect.bottom + 100
-
-    if (!isNearMascot) {
-      return []
-    }
-
-    return [{
-      ...shadow,
-      anchor: 'mascot',
-      x:
-        ((shadow.x / 100) * contentRect.width -
-          (mascotRect.left - contentRect.left)) /
-        scale,
-      y:
-        ((shadow.y / 100) * contentRect.height -
-          (mascotRect.top - contentRect.top)) /
-      scale,
-    }]
-  })
-
-  const hasChanges =
-    migratedShadows.length !== previousShadows.length ||
-    migratedShadows.some((shadow, index) => shadow !== previousShadows[index])
-
-  if (hasChanges) {
-    shadows.value = migratedShadows
-    writeStoredJson(shadowStorageKey, migratedShadows)
-  }
-}
-
-function migrateLegacyTextAreas() {
-  const content = gameStageRef.value
-  if (!content) return
-
-  const contentRect = content.getBoundingClientRect()
-  const previousTextAreas = textAreas.value
-
-  const migratedTextAreas = previousTextAreas.map((area): TextAreaItem => {
-    if (area.anchor === 'chest') return area
-
-    const chestElement = chestElements[area.chestId - 1]
-    if (!chestElement) return area
-
-    const chestRect = chestElement.getBoundingClientRect()
-
-    return {
-      ...area,
-      x: (area.x / 100) * contentRect.width - (chestRect.left - contentRect.left),
-      y: (area.y / 100) * contentRect.height - (chestRect.top - contentRect.top),
-      anchor: 'chest',
-    }
-  })
-
-  if (migratedTextAreas.some((area, index) => area !== previousTextAreas[index])) {
-    textAreas.value = migratedTextAreas
-    writeStoredJson(textAreaStorageKey, migratedTextAreas)
-  }
-}
-
-function improveTextAreaPresentation() {
-  if (readStoredText(textAreaVisualVersionKey) === '1') return
-
-  // Fresh installations already use the finalized positions baked into the code.
-  if (!Array.isArray(readStoredJson(textAreaStorageKey))) {
-    writeStoredText(textAreaVisualVersionKey, '1')
-    return
-  }
-
-  textAreas.value.forEach((area) => {
-    const chestElement = chestElements[area.chestId - 1]
-    if (!chestElement) return
-
-    area.x = (chestElement.clientWidth - area.width) / 2
-    if (area.rotation === 5) area.rotation = 0
-  })
-
-  writeStoredJson(textAreaStorageKey, textAreas.value)
-  writeStoredText(textAreaVisualVersionKey, '1')
 }
 
 function setChestElement(element: unknown, index: number) {
@@ -1056,11 +686,6 @@ onMounted(async () => {
   contentResizeObserver = new ResizeObserver(updateGameStageScale)
   if (contentRef.value) contentResizeObserver.observe(contentRef.value)
   window.addEventListener('resize', updateGameStageScale)
-
-  migrateChestShadows()
-  migrateMascotShadows()
-  migrateLegacyTextAreas()
-  improveTextAreaPresentation()
 })
 
 watch(isGameComplete, (gameComplete) => {
@@ -1418,30 +1043,11 @@ onBeforeUnmount(() => {
         }"
       >
         <div
-          ref="mascotVisualRef"
           class="mascot-visual"
           :style="{ transform: `translateY(${mascotVisualOffsetY}px)` }"
         >
           <img :src="mascotImage" alt="Maskot" draggable="false" />
         </div>
-      </div>
-
-      <div
-        v-for="shadow in contentShadows"
-        :key="shadow.id"
-        class="editable-shadow"
-        :style="{
-          left: `${shadow.x}%`,
-          top: `${shadow.y}%`,
-          width: `${shadow.width}px`,
-          height: `${shadow.height}px`,
-        }"
-      >
-        <span
-          class="shadow-visual"
-          :style="{ opacity: shadow.opacity }"
-          aria-hidden="true"
-        ></span>
       </div>
 
       <div class="chest-grid" aria-label="Sandıklar">
