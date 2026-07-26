@@ -360,8 +360,9 @@ function updateGameStageScale() {
 
   const widthScale = content.clientWidth / gameStageReference.width
   const heightScale = content.clientHeight / gameStageReference.height
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches
 
-  if (content.clientWidth >= 900) {
+  if (isTouchDevice || content.clientWidth >= 900) {
     gameStageScale.value = heightScale
     gameStageWidth.value = content.clientWidth / heightScale
     return

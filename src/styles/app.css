@@ -1392,3 +1392,46 @@
     column-gap: 8px;
   }
 }
+
+@media (pointer: coarse) {
+  .app-shell,
+  .content {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .app-shell {
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 240px;
+    height: 100dvh;
+    flex-basis: 240px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-color: #a98459 #060812;
+    scrollbar-width: thin;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar.collapsed {
+    width: 78px;
+    flex-basis: 78px;
+  }
+
+  .sidebar .brand,
+  .sidebar .sidebar-footer {
+    flex-shrink: 0;
+  }
+
+  .sidebar .menu {
+    flex: 0 0 auto;
+  }
+
+  .sidebar .sidebar-footer {
+    margin-top: auto;
+  }
+}
